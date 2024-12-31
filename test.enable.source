@@ -1,0 +1,43 @@
+REMOTE_EXEC_SO_PATH="$(pwd)/test.so"
+REMOTE_EXEC_LOCAL_ENVPATH=""
+REMOTE_EXEC_GDB=("$(type -p gdb)" -p $$ --batch --quiet --nx --nh -ex "set auto-load no")
+
+"${REMOTE_EXEC_GDB[@]}" -ex 'call (void*)dlopen("'"$REMOTE_EXEC_SO_PATH"'", 2)' -ex 'call (char*)dlerror()'
+
+global_fixes()
+{
+    original_ld_library_path="$LD_LIBRARY_PATH"
+    # Remove relative paths from LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH="$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | awk '/^\// {print}' | paste -sd ':' -)"
+    if [ "$original_ld_library_path" != "$LD_LIBRARY_PATH" ]
+    then
+        echo "You had relative paths in your LD_LIBRARY_PATH. These make shells run very slowly on remote mounts."
+        echo "This is your new LD_LIBRARY_PATH for this session:"
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    fi
+}
+
+global_fixes
+
+remoteexec()
+{
+    if [ -z "$1" ]
+    then
+        path="$(pwd)"
+    else
+        path="$1"
+    fi
+    if [ -z "$REMOTE_EXEC_LOCAL_ENVPATH" ]
+    then
+        REMOTE_EXEC_LOCAL_ENVPATH="$PATH"
+    fi
+    localexec "${REMOTE_EXEC_GDB[@]}" -ex 'call wrapping_set_path("'"$path"'")'
+    "$REMOTE_EXEC_SO_PATH" enable
+    cd "$("$REMOTE_EXEC_SO_PATH" cwd)"
+    PATH="$("$REMOTE_EXEC_SO_PATH" path)"
+}
+
+localexec()
+{
+    "$REMOTE_EXEC_SO_PATH" local "$@"
+}

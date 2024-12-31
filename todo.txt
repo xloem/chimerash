@@ -1,0 +1,2 @@
+- move process.cpp off of FILE* back down to raw filedescriptors, because they're getting used in forked subprocesses which isn't something FILE*'s guarantee to be ok
+- use an interprocess lock when sharing access to processes in subprocesses (SSHFS::run)

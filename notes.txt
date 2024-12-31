@@ -1,0 +1,36 @@
+2024-12-31
+feeling really tense so sorting out storing this somewhere.
+left off working on preventing SIGINT from closing the ssh connections
+
+2024-12-30
+It's basically working. The next step makes it actually work.
+- set the remote path locally in the launch script
+- detect if a remote binary is bieng run in the execve wrapper
+- make a process shell in fs_sshfs that duplicates the user's pty
+- forward the command to the process shell when run
+2327
+the basics have been working for some time now, which is impressive.
+i want to move the cwd and env variables out of sshprocess so multiple processes can back a single state more flexibly.
+it is so much faster to run 'ls' on the remote server than to 'ls' the sshfs mount :s been thinking about hooking the filesystem calls
+
+2024-12-28
+ok ummmmmmmm
+plan is to LD_PRELOAD the thing
+and have a script to enable/disable it.
+
+i guess to have it harmless maybe not with an env var as that would require iterating them, better with a global flag
+maybe it can listen for a user signal
+
+shells can use signals. so it's safest to communicate by making a special execve() call.
+specifically we can try to execute the preloaded library. and then send data via arguments.
+the wrapper could identify that and process the arguments at runtime.
+0821 ET
+0935 ET
+so when enabled, makes sense to store what mount is being used.
+
+we can actually use multiple mounts, enabling one or another.
+but they'd need to be located in the shared memory, to do so.
+
+so when enabled it would be nice to enable the mount one is in.
+    ok so we have some length of shared memory
+    i guess we'd placement new an array in there or something
