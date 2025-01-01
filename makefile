@@ -1,4 +1,4 @@
-CXXFLAGS=-fPIC -std=c++23 -ggdb -O0 -Wall -Werror -pedantic -D_GLIBCXX_DEBUG# -fsanitize=address
+CXXFLAGS=-fPIC -std=c++20 -ggdb -O0 -Wall -Werror -pedantic -D_GLIBCXX_DEBUG# -fsanitize=address
 CPPFLAGS+=$(CXXFLAGS)
 LIBS=-lutil -ldl -pthread -lsyscall_intercept# -lasan
 

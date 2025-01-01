@@ -316,8 +316,7 @@ int Wrapping::wrapped_execve(const char*filename, char*const argv[], char*const 
         std::cerr << std::endl;
         */
         // .. it runs in a subprocess oopsies
-        wrapping.fs->run(wrapping.fs->get_mnt().local_to_remote(FS::cwd()), {}, filename, argv, envp);
-        _exit(0);
+        _exit(wrapping.fs->run(wrapping.fs->get_mnt().local_to_remote(FS::cwd()), {}, filename, argv, envp));
     } else {
         //*/
         return wrapping.real_execve(filename,argv,envp);

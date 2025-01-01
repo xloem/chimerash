@@ -19,8 +19,9 @@ private:
     std::string_view run(std::string_view chdir, std::string_view env, std::string_view cmd, std::string_view remove_suffix = "");
     
     Process::fd_mode fd_modes[3];
-    //std::string env;
-    //std::string cwd;
+
+    std::string remote_pid_str;
+    int remote_pid;
 };
 
 #include <memory>
@@ -43,6 +44,7 @@ private:
     static std::string_view const MNT_TYPE;
 
     std::unique_ptr<SSHProcess> run_process, status_process;
+    std::string remote_fifo;
 
     std::string _env, _cwd;
 

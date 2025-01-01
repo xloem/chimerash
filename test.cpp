@@ -23,5 +23,5 @@ int Wrapping::real_execve(const char*filename, char*const argv[], char*const env
 int main()
 {
     FS & fs = *wrapping.get_FS();
-    fs.run("/media/remote-extra/usr/bin/pwd", std::to_array({(char*)"pwd",(char*)nullptr}).data(),0);
+    fs.run({}, {}, "/media/remote-extra/usr/bin/pwd", std::to_array({(char*)"pwd",(char*)nullptr}).data(),0);
 }
