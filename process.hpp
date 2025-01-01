@@ -24,6 +24,7 @@ private:
     static std::string run_impl(std::string_view input, char const*fn, char*const argv[], char*const envp[]);
     static std::string run_impl(std::string_view input, int pid, int pipes[]);
 
+    int pid;
     int fds[3];
     void*files[3];
 };

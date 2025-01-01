@@ -2,6 +2,7 @@
 
 #include "wrappers.hpp" // to use real execve
 
+#include <atomic>
 #include <array>
 #include <chrono>
 #include <csignal>
@@ -14,6 +15,9 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 
+// this is not actually needed atm and can be commented out. atomics could be used to communicate, especially if a separate daemon is run, moving away from so injection
+static_assert(std::atomic<int>::is_always_lock_free, "atomic<int> not lock free in this toolchain");
+
 /* i use c-style casts because they are more concise */
 
 #include <iostream>
@@ -21,7 +25,7 @@ Process::Process(fd_mode stdin_mode, fd_mode stdout_mode, fd_mode stderr_mode, c
 {
     int parent_pty = -1, child_pty = -1;
     int pipes[3][2];
-    int child_fds[3], child_pid;
+    int child_fds[3];
     int r;
     fd_mode modes[3] = {stdin_mode, stdout_mode, stderr_mode};
     for (int num = 0; num < 3; ++ num)
@@ -62,31 +66,23 @@ Process::Process(fd_mode stdin_mode, fd_mode stdout_mode, fd_mode stderr_mode, c
         std::cerr << " " << *env;
     }
     std::cerr << std::endl;
-    child_pid = fork();
-    if (child_pid == -1) throw std::system_error(errno, std::system_category(), "Process::Process fork");
-    if (child_pid == 0) {
+    pid = fork();
+    if (pid == -1) throw std::system_error(errno, std::system_category(), "Process::Process fork");
+    if (pid == 0) {
         /* child */
+        r = setpgid(0, 0); // prevents forwarding of parent signals
+        if (r == -1) _exit(errno);
+
         for (int num = 0; num < 3; ++ num) {
             if (fds[num] != num) {
                 r = close(fds[num]);
-                if (r == -1) _exit(errno);//throw std::system_error(errno, std::system_category());
+                if (r == -1) _exit(errno);
                 r = dup2(child_fds[num],num);
-                if (r == -1) _exit(errno);//throw std::system_error(errno, std::system_category());
+                if (r == -1) _exit(errno);
                 r = close(child_fds[num]);
-                if (r == -1) _exit(errno);//throw std::system_error(errno, std::system_category());
+                if (r == -1) _exit(errno);
             }
         }
-
-        /*
-        prctl(PR_SET_PDEATHSIG, SIGTERM);
-
-        struct sigaction sig_ign;
-        sig_ign.sa_handler = SIG_IGN;
-        sig_ign.sa_flags = 0;
-        sigemptyset(&sig_ign.sa_mask);
-        sigaction(SIGINT, &sig_ign, nullptr);
-        sigaction(SIGHUP, &sig_ign, nullptr);
-        */
 
         r = execve(fn, argv, envp);
         _exit(errno);
@@ -96,9 +92,9 @@ Process::Process(fd_mode stdin_mode, fd_mode stdout_mode, fd_mode stderr_mode, c
             for (int num = 0; num < 3; ++ num) {
                 if (fds[num] != num) {
                     r = close(child_fds[num]);
-                    if (r == -1) throw std::system_error(errno, std::system_category());
+                    if (r == -1) throw std::system_error(errno, std::system_category(), "Process::Process close");
                     files[num] = fdopen(fds[num], num?"rb":"wb");
-                    if (!files[num]) throw std::system_error(errno, std::system_category());
+                    if (!files[num]) throw std::system_error(errno, std::system_category(), "Process::Process fdopen");
                 }
             }
         } catch (...) {
@@ -128,7 +124,7 @@ void Process::write(std::string_view data)
     int fd = 0;
     if (fds[fd] == fd) throw std::invalid_argument("write to invalid fd");
     size_t r = fwrite(data.data(), 1, data.size(), (FILE*)files[fd]);
-    if (r != data.size()) throw std::system_error(errno, std::system_category());
+    if (r != data.size()) throw std::system_error(errno, std::system_category(), "Process::write fwrite");
     fflush((FILE*)files[fd]);
 }
 
@@ -175,7 +171,7 @@ int Process::wait(int ms)
         default:
             for (int i = 0; i < 2; ++ i)
                 if (events[i].events & EPOLLERR)
-                    throw std::system_error(errno, std::system_category());
+                    throw std::system_error(errno, std::system_category(), "Process");
             for (int i = 0; i < 2; ++ i)
                 if (events[i].events & EPOLLIN)
                     return events[i].data.u32;
@@ -201,11 +197,11 @@ bool Process::avail_needslock(int fd)
     clearerr((FILE*)files[fd]);
     int c = getc((FILE*)files[fd]);
     if (c == EOF) {
-        if (ferror((FILE*)files[fd])) throw std::system_error(errno, std::system_category());
+        if (ferror((FILE*)files[fd])) throw std::system_error(errno, std::system_category(), "Process::avail_needslock getc");
         return false;
     } else {
         int r = ungetc(c, (FILE*)files[fd]);
-        if (r == EOF) throw std::system_error(errno, std::system_category());
+        if (r == EOF) throw std::system_error(errno, std::system_category(), "Process::avail_needslock ungetc");
         return true;
     }
 }
@@ -269,6 +265,7 @@ std::string_view Process::readall(int fd)
 
 Process::~Process()
 {
+    kill(pid, SIGTERM);
     for (int num = 0; num < 3; ++ num) {
         if (fds[num] != num) {
             fclose((FILE*)files[num]);
