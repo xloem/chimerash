@@ -1,0 +1,3 @@
+- moving the guts into a standalone daemon could make things more robust and open options
+- looking into how sshfs performs remote connection (likely links to openssh) could remove the ssh subprocess spawning
+- implementing remote mounting without sshfs could provide for further speed gains
