@@ -35,6 +35,7 @@ remoteexec()
     "$REMOTE_EXEC_SO_PATH" enable
     cd "$("$REMOTE_EXEC_SO_PATH" cwd)"
     PATH="$("$REMOTE_EXEC_SO_PATH" path)"
+    PS1="$(localexec tput setaf 1)$PS1$(localexec tput sgr0)"
 }
 
 localexec()

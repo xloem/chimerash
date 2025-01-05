@@ -1,3 +1,16 @@
+2025-01-05
+i'm visiting this and realising i can help myself by planning the interface better.
+i thought a nice interface could be to make it actually look like you're on the remote system. this could define clear UI goals.
+it also might be nice if it launched sshfs automatically.
+this might basically mean mutating what the pwd appears to be. changing PS1 might pull this off.
+it could be fun if the directory were a different color or did something fancy like pulsating.
+i guess pulsating would be a lot of character updates for session recorders though. maybe something static or a minimal blink.
+1922 ET
+i suppose the remote shell would be giving me a PS1 that i could capture and output ... hmmm ... i could do string replace on either one to change the current dir ...
+1925
+but I think more importantly I was working on stdin and ttys. maybe i can do something quick for PS1, like outfixing it with a color mod.
+1927
+
 2024-12-31
 feeling really tense so sorting out storing this somewhere.
 left off working on preventing SIGINT from closing the ssh connections

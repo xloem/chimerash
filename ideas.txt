@@ -1,3 +1,5 @@
-- moving the guts into a standalone daemon could make things more robust and open options
+- making the lifetime of the mount wrapped by the launching method seems like a consistent approach.
+  one single process could be launched, like shelling in, and then leaving that process would leave the remote server.
 - looking into how sshfs performs remote connection (likely links to openssh) could remove the ssh subprocess spawning
+- moving the guts into a standalone daemon could make things more robust and open options
 - implementing remote mounting without sshfs could provide for further speed gains
